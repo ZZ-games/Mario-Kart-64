@@ -1,0 +1,8 @@
+# Game files never go on main (main is what GitHub Pages serves).
+*.z64
+*.n64
+*.v64
+*.wasm
+build/
+decomp/
+rom/
