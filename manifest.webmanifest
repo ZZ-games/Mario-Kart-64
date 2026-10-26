@@ -1,0 +1,2 @@
+{ "name": "Mario Kart 64 Recompiled", "short_name": "MK64", "start_url": "./index.html", "display": "fullscreen",
+  "orientation": "landscape", "background_color": "#000000", "theme_color": "#000000" }

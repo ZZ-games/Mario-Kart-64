@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MK64">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Mario Kart 64 Recompiled</title>
+<script>
+  // GitHub Pages can't send the headers that allow multithreading, so a service worker adds them.
+  if (!crossOriginIsolated && 'serviceWorker' in navigator && location.hostname !== '127.0.0.1') {
+    navigator.serviceWorker.register('sw.js').then(r => {
+      if (!sessionStorage.getItem('coi-reloaded')) { sessionStorage.setItem('coi-reloaded', '1'); navigator.serviceWorker.ready.then(() => location.reload()); }
+    }).catch(() => {});
+  }
+</script>
+<style>
+  :root { --bg: #000; --fg: #ece8dc; --muted: #8f8a7c; --red: #e0402c; --panel: #15130f; --line: #3a352b; color-scheme: dark; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); overflow: hidden; touch-action: none;
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-user-select: none; user-select: none; }
+  canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  #status { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); max-width: min(560px, 90vw);
+    text-align: center; font-size: 16px; padding: 14px 18px; background: rgba(0,0,0,.7); border-radius: 8px; }
+  #status.err { color: #ffb4a8; border: 1px solid var(--red); }
+  #hud { position: fixed; right: max(12px, env(safe-area-inset-right)); top: max(10px, env(safe-area-inset-top)); display: flex; gap: 8px; align-items: center; opacity: .3; }
+  #hud:hover, #hud:focus-within { opacity: 1; }
+  #fps { font: 12px ui-monospace, Menlo, monospace; color: var(--muted); }
+  button, .file { font: 600 13px system-ui, sans-serif; color: var(--fg); background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.22);
+    border-radius: 6px; padding: 8px 12px; cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  #setup { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(0,0,0,.85); overflow: auto; -webkit-user-select: text; user-select: text; touch-action: auto; }
+  #setup .card { width: min(520px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 14px; }
+  #setup h1 { margin: 0; font-size: 20px; }
+  #setup p { margin: 0; color: var(--muted); }
+  #setup input[type=password] { font: 14px ui-monospace, Menlo, monospace; padding: 10px; border-radius: 6px; border: 1px solid var(--line); background: #000; color: var(--fg); width: 100%; box-sizing: border-box; }
+  #setup .or { text-align: center; color: var(--muted); font-size: 13px; }
+  #setup .primary { background: var(--red); border-color: var(--red); color: #fff; }
+  #setupMsg { color: #ffcf8a; min-height: 1.4em; }
+  .touch { display: none; }
+  @media (pointer: coarse) { body.running .touch { display: block; } }
+  #stick { position: fixed; left: max(24px, env(safe-area-inset-left)); bottom: max(24px, env(safe-area-inset-bottom)); width: 150px; height: 150px; border-radius: 50%;
+    background: rgba(255,255,255,.08); border: 2px solid rgba(255,255,255,.25); touch-action: none; }
+  #knob { position: absolute; left: 45px; top: 45px; width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,.35); pointer-events: none; }
+  .tb { position: fixed; display: grid; place-items: center; border-radius: 50%; border: 2px solid rgba(255,255,255,.3); background: rgba(255,255,255,.1);
+    font: 700 18px system-ui, sans-serif; color: rgba(255,255,255,.85); touch-action: none; }
+  .tb.down { background: rgba(255,255,255,.35); }
+  .tA { right: max(30px, env(safe-area-inset-right)); bottom: max(70px, env(safe-area-inset-bottom)); width: 78px; height: 78px; background: rgba(40,90,220,.35); }
+  .tB { right: max(120px, env(safe-area-inset-right)); bottom: max(30px, env(safe-area-inset-bottom)); width: 64px; height: 64px; background: rgba(40,170,80,.3); }
+  .tZ { left: max(24px, env(safe-area-inset-left)); bottom: max(200px, env(safe-area-inset-bottom)); width: 58px; height: 58px; }
+  .tR { right: max(30px, env(safe-area-inset-right)); bottom: max(170px, env(safe-area-inset-bottom)); width: 64px; height: 64px; }
+  .tS { left: 50%; transform: translateX(-50%); bottom: max(16px, env(safe-area-inset-bottom)); width: 86px; height: 34px; border-radius: 17px; font-size: 13px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<canvas id="screen" aria-label="Mario Kart 64"></canvas>
+<div id="status">Loading…</div>
+<div id="hud"><span id="fps"></span><button id="full" type="button" title="Fullscreen (F)">Fullscreen</button><button id="forget" type="button" title="Remove the saved game files from this device">Reset files</button></div>
+
+<div class="touch" aria-hidden="true">
+  <div id="stick"><div id="knob"></div></div>
+  <div class="tb tA" data-btn="A">A</div>
+  <div class="tb tB" data-btn="B">B</div>
+  <div class="tb tZ" data-btn="Z">Z</div>
+  <div class="tb tR" data-btn="R">R</div>
+  <div class="tb tS" data-btn="START">START</div>
+</div>
+
+<div id="setup" hidden>
+  <div class="card">
+    <h1>One-time setup on this device</h1>
+    <p>The game files stay private, so this device needs them once. After that, the game opens straight away.</p>
+    <label for="ghToken">GitHub access key (read-only, for ZZ-games/Mario-Kart-64)</label>
+    <input id="ghToken" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…">
+    <button id="ghGo" class="primary" type="button">Download and play</button>
+    <div class="or">or</div>
+    <label class="file" for="pickFiles">Choose mk64.z64 and mk64.wasm from Files</label>
+    <input id="pickFiles" type="file" multiple hidden>
+    <div id="setupMsg" aria-live="polite"></div>
+  </div>
+</div>
+<script type="module" src="main.js"></script>
+</body>
+</html>
